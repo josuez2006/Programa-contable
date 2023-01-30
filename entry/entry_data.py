@@ -4,8 +4,8 @@ from dataclasses import dataclass
 class EntryGeneral:
     date: str
     key: str
-    value: str
-    balance: str
+    value: float
+    balance: float
     position: int
     is_negative: bool = True
 
@@ -24,10 +24,10 @@ class EntryGeneral:
 
 @dataclass(kw_only=True)
 class EntryCommision(EntryGeneral):
-    iva_key: int
-    iva_value: int
-    taxes_key: int
-    taxes_value: int
+    iva_key: str
+    iva_value: float
+    taxes_key: str
+    taxes_value: float
     
     def how_to_print_in_excel(self, letter_position: int, number_position: int):
         if self.taxes_key == 'False':

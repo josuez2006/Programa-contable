@@ -1,7 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 
-from entry.resources import for_each_item_do, disarray
+from entry.resources import for_each_item_do, disarray, from_str_to_float
 from entry.entry_data import *
 from entry.entry_is_negative import *
 
@@ -85,7 +85,7 @@ class EntryGeneralSearcher(EntrySearcher):
         return for_each_item_do(entries, self.create_entry)
 
     def create_entry(self, entry:list[str]) -> EntryGeneral:
-        return EntryGeneral(date = entry[0], key = entry[1], value = entry[2], balance = entry[3], position = int(entry[4]))
+        return EntryGeneral(date = entry[0], key = entry[1], value = from_str_to_float(entry[2]), balance = from_str_to_float(entry[3]), position = int(entry[4]))
 
 
 
@@ -96,7 +96,7 @@ class EntryTransferSearcher(EntrySearcher):
 
 
     def __init__(self, keys):
-        self.pattern = "[0-9]+\n[0-9\s\.\,\-]+\n[a-zA-Z\s\,]+[^0-9]"
+        self.pattern = "[0-9]+\n[0-9\s\.\,\-]+\n[a-zA-Z\s\,\/]+[^0-9]"
         self.keys = keys
 
 
@@ -165,20 +165,13 @@ class EntryTransferSearcher(EntrySearcher):
 
     def create_entry(self, entry: list[str]) -> EntryTransfer:
         if len(entry) > 6:
-            return EntryTransfer(date = entry[0], key = entry[1], value = entry[2], balance = entry[3], author = entry[4], position = int(entry[len(entry)-1]))
+            return EntryTransfer(date = entry[0], key = entry[1], value = from_str_to_float(entry[2]), balance = from_str_to_float(entry[3]), author = entry[4], position = int(entry[len(entry)-1]))
         else:
-            return EntryTransfer(date = entry[0], key = entry[1], value = entry[2], balance = entry[3], author = entry[4], position = int(entry[5]))
+            return EntryTransfer(date = entry[0], key = entry[1], value = from_str_to_float(entry[2]), balance = from_str_to_float(entry[3]), author = entry[4], position = int(entry[5]))
 
     
     def validate_entries(self, entries: list[EntryTransfer]) -> list[EntryTransfer]:
         return [entry for entry in entries if entry.author != 'AMERICAN EXPRESS' and not entry.author.isalpha()]
-
-
-    # def make_positions_int(self, entries: list) -> list:
-    #     for entry in entries:
-    #         entry.position = int(entry.position)
-
-    
 
 
 
@@ -270,7 +263,7 @@ class EntryDebitSearcher(EntrySearcher):
         return for_each_item_do(entries, self.create_entry)
 
     def create_entry(self, entry: list[str]) -> EntryDebit:
-        return EntryDebit(date = entry[0], key = entry[1], value = entry[2], balance = entry[3], author = entry[4], position = int(entry[6]), afip_number = entry[7])
+        return EntryDebit(date = entry[0], key = entry[1], value = from_str_to_float(entry[2]), balance = from_str_to_float(entry[3]), author = entry[4], position = int(entry[6]), afip_number = entry[7])
 
 
    
@@ -348,7 +341,11 @@ class EntryCommisionSearcher(EntrySearcher):
         return for_each_item_do(entries, self.create_entry)
 
     def create_entry(self, entry:list) -> EntryCommision:
-        return EntryCommision(date = entry[0], key = entry[1], value = entry[2], balance = entry[3], position = int(entry[4]), iva_key = entry[5], iva_value = entry[6], taxes_key = entry[7], taxes_value = entry[8])
+        if entry[7] != 'False':
+            return EntryCommision(date = entry[0], key = entry[1], value = from_str_to_float(entry[2]), balance = from_str_to_float(entry[3]), position = int(entry[4]), iva_key = entry[5], iva_value = from_str_to_float(entry[6]), taxes_key = entry[7], taxes_value = from_str_to_float(entry[8]))
+        else:
+            return EntryCommision(date = entry[0], key = entry[1], value = from_str_to_float(entry[2]), balance = from_str_to_float(entry[3]), position = int(entry[4]), iva_key = entry[5], iva_value = from_str_to_float(entry[6]), taxes_key = entry[7], taxes_value = entry[8])
+
 
 
     def find_missing_data(self, start_position: int):
@@ -384,9 +381,12 @@ class EntryCommisionSearcher(EntrySearcher):
                 return False
         
         new_text = text[start_position:]
-        end_position = re.search(pattern, new_text).end()
-        return new_text[:end_position]
-
+        end_position = re.search(pattern, new_text)
+        
+        if end_position != None:
+            return new_text[:end_position.end()]
+        else:
+            return False
 
 
 class EntryBalanceSearcher(EntrySearcher):
@@ -458,14 +458,14 @@ class EntryBalanceSearcher(EntrySearcher):
 
 
     def create_entry(self, entry:list) -> EntryGeneral:
-        return EntryBalance(key = entry[0], balance = entry[1], position = int(entry[2]))
+        return EntryBalance(key = entry[0], balance = from_str_to_float(entry[1]), position = int(entry[2]))
 
 
 
 def search_entries(text):
     searchers = [
         EntryGeneralSearcher(['PAGO VISA EMPRESA', 'SERVICIO', 'ECHEQ']),
-        EntryTransferSearcher(['TRF', 'TRANS']),
+        EntryTransferSearcher(['TRF', 'TRANSFERENCIAS', 'TRANSFERENCIA', 'TRANSF. AFIP']),
         EntryDebitSearcher(['DEB. AUTOM. DE SERV.']),
         EntryCommisionSearcher(['COM.', 'COMISION'])
     ]
@@ -481,12 +481,13 @@ def search_entries(text):
     return entries_found
 
 
+
 def search_all_entries(text):
     searchers = [
         EntryBalanceSearcher(['SALDO INICIAL' ,'SALDO ANTERIOR']),
         EntryGeneralSearcher(['PAGO VISA EMPRESA', 'SERVICIO', 'ECHEQ']),
         EntryGeneralSearcher(['ACREDITAMIENTOS PRISMA - COMERCIOS', 'ING. BRUTOS S/ CRED']),
-        EntryTransferSearcher(['TRF', 'TRANS']),
+        EntryTransferSearcher(['TRF', 'TRANSFERENCIAS', 'TRANSFERENCIA', 'TRANSF. AFIP']),
         EntryDebitSearcher(['DEB. AUTOM. DE SERV.']),
         EntryCommisionSearcher(['COM.', 'COMISION'])
     ]
@@ -505,5 +506,5 @@ def search_all_entries(text):
 def get_entries(text: str) -> list:
     sorted_entries = search_entries(text)
     all_entries = search_all_entries(text)
-    #match_entries(sorted_entries, all_entries)
+    match_entries(sorted_entries, all_entries)
     return sorted_entries

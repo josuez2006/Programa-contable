@@ -13,3 +13,7 @@ def disarray(arr: list) -> list:
             new_arr.append(element)
 
     return new_arr
+
+
+def from_str_to_float(number: str) -> float:
+    return float(number.replace('.', '').replace(',', '.'))
