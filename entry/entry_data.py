@@ -9,11 +9,101 @@ class EntryGeneral:
     position: int
     is_negative: bool = True
 
-    def print(self, work_sheet, letter_position: int, number_position: int) -> int:
-        work_sheet[chr(letter_position) + str(number_position)] = self.date 
-        work_sheet[chr(letter_position + 1) + str(number_position)] = self.key
-        work_sheet[chr(letter_position + 2) + str(number_position)] = self.value
-        return 1
+    def how_to_print_in_excel(self, letter_position: int, number_position: int) -> list[list]:
+        self.number_of_breaks = 1
+        return [
+            [self.date, letter_position, number_position],
+            [self.key, letter_position + 1, number_position],
+            [self.value, letter_position + 2, number_position]
+        ]
+
+
+    def get_number_of_breaks_in_excel(self):
+        return self.number_of_breaks
+
+
+@dataclass(kw_only=True)
+class EntryCommision(EntryGeneral):
+    iva_key: int
+    iva_value: int
+    taxes_key: int
+    taxes_value: int
+    
+    def how_to_print_in_excel(self, letter_position: int, number_position: int):
+        if self.taxes_key == 'False':
+            self.number_of_breaks = 3
+            return [
+                [self.date, letter_position, number_position],
+                [self.key, letter_position + 1, number_position],
+                [self.value, letter_position + 2, number_position],
+                [self.iva_key, letter_position + 1, number_position + 1],
+                [self.iva_value, letter_position + 2, number_position + 1]
+            ]
+        else:
+            self.number_of_breaks = 4
+            return [
+                [self.date, letter_position, number_position],
+                [self.key, letter_position + 1, number_position],
+                [self.value, letter_position + 2, number_position],
+                [self.iva_key, letter_position + 1, number_position + 1],
+                [self.iva_value, letter_position + 2, number_position + 1],
+                [self.taxes_key, letter_position + 1, number_position + 2],
+                [self.taxes_value, letter_position + 2, number_position + 2]
+            ]
+
+    def get_number_of_breaks_in_excel(self):
+        return self.number_of_breaks
+
+
+@dataclass(kw_only=True)
+class EntryTransfer(EntryGeneral):
+    author: str
+
+    def how_to_print_in_excel(self, letter_position: int, number_position: int) -> list[list]:
+        self.number_of_breaks = 1
+        if self.author.isnumeric():
+            return [
+                [self.date, letter_position, number_position],
+                [self.key, letter_position + 1, number_position],
+                [self.value, letter_position + 2, number_position],
+                [int(self.author), letter_position + 3, number_position]
+            ]
+        else:
+            return [
+                [self.date, letter_position, number_position],
+                [self.key, letter_position + 1, number_position],
+                [self.value, letter_position + 2, number_position],
+                [self.author, letter_position + 3, number_position]
+            ]
+
+    def get_number_of_breaks_in_excel(self):
+        return self.number_of_breaks
+
+
+@dataclass(kw_only=True)
+class EntryDebit(EntryTransfer):
+    afip_number: str
+
+    def how_to_print_in_excel(self, letter_position: int, number_position: int):
+        self.number_of_breaks = 1
+        if self.afip_number == 'False':
+            return [
+                [self.date, letter_position, number_position],
+                [self.key, letter_position + 1, number_position],
+                [self.value, letter_position + 2, number_position],
+                [self.author, letter_position + 3, number_position]
+            ]
+        else:
+            return [
+                [self.date, letter_position, number_position],
+                [self.key, letter_position + 1, number_position],
+                [self.value, letter_position + 2, number_position],
+                [self.author, letter_position + 3, number_position],
+                [self.afip_number, letter_position + 4, number_position],
+            ] 
+
+    def get_number_of_breaks_in_excel(self):
+        return self.number_of_breaks
 
 
 @dataclass(kw_only=True)
@@ -21,65 +111,3 @@ class EntryBalance:
     key: str
     balance: str
     position: int
-
-
-@dataclass(kw_only=True)
-class EntryCommison(EntryGeneral):
-    iva_key: int
-    iva_value: int
-    taxes_key: int
-    taxes_value: int
-
-    def print(self, work_sheet, letter_position: int, number_position: int) -> int:
-        work_sheet[chr(letter_position) + str(number_position)] = self.date 
-        work_sheet[chr(letter_position + 1) + str(number_position)] = self.key
-        work_sheet[chr(letter_position + 2) + str(number_position)] = self.value
-        work_sheet[chr(letter_position + 1) + str(number_position + 1)] = self.iva_key
-        work_sheet[chr(letter_position + 2) + str(number_position + 1)] = self.iva_value
-
-        if self.taxes_key != 'False':
-            work_sheet[chr(letter_position + 1) + str(number_position + 2)] = self.taxes_key
-            work_sheet[chr(letter_position + 2) + str(number_position + 2)] = self.taxes_value
-            return 4
-
-        return 3
-
-
-        
-
-
-
-
-@dataclass(kw_only=True)
-class EntryTransfer(EntryGeneral):
-    author: str
-
-    def print(self, work_sheet, letter_position: int, number_position: int) -> int:
-        work_sheet[chr(letter_position) + str(number_position)] = self.date 
-        work_sheet[chr(letter_position + 1) + str(number_position)] = self.key
-        work_sheet[chr(letter_position + 2) + str(number_position)] = self.value
-
-        if self.author.isnumeric():
-            work_sheet[chr(letter_position + 3) + str(number_position)] = int(self.author)
-        else:
-            work_sheet[chr(letter_position + 3) + str(number_position)] = self.author
-
-        return 1
-
-
-
-@dataclass(kw_only=True)
-class EntryDebit(EntryTransfer):
-    afip_number: str
-
-    def print(self, work_sheet, letter_position: int, number_position: int) -> int:
-        work_sheet[chr(letter_position) + str(number_position)] = self.date 
-        work_sheet[chr(letter_position + 1) + str(number_position)] = self.key
-        work_sheet[chr(letter_position + 2) + str(number_position)] = self.value
-
-        if self.afip_number != 'False':
-            work_sheet[chr(letter_position + 3) + str(number_position)] = self.afip_number
-
-        return 1
-
-
