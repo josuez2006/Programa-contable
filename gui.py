@@ -1,6 +1,7 @@
 from pathlib import Path
 from tkinter import Tk, Canvas, Button, PhotoImage, Label
 from main import find_input_path, find_output_path, convert_file
+from error_gui import start_error_gui
 
 
 OUTPUT_PATH = Path(__file__).parent
@@ -20,7 +21,11 @@ def set_field_2():
 
 def send():
     window.destroy()
-    convert_file()
+
+    try:
+        convert_file()
+    except:
+        start_error_gui()
 
 window = Tk()
 
