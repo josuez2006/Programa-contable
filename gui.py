@@ -5,7 +5,7 @@ from error_gui import start_error_gui
 
 
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(r"C:\Users\Josue\Desktop\Learning Python\assets\elements")
+ASSETS_PATH = OUTPUT_PATH / Path("assets\elements")
 
 
 def relative_to_assets(path: str) -> Path:
